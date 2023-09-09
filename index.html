@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>DOCX Comment/Track Changes Author Changer</title>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk="
+    crossorigin="anonymous"></script>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+    crossorigin="anonymous"></script>
+</head>
+
+<style>
+</style>
+
+
+<body class="d-flex flex-column" style="min-height: 100vh;">
+
+  <main class="flex-grow-1">
+    <div class="container">
+      <p class="text-center h3" style="color: #888888; margin-top: 12rem;"><strong>MS Word Comment/Track Changes
+          Author
+          Changer</strong>
+      </p>
+
+      <p class="text-center" style="color: #888888; margin-bottom: 9rem;">
+        This web app will allow you to modify the authors of comments and track changes in a Microsoft Word DOCX file.
+        Note: Everything is done on your computer and nothing is uploaded online. You can use this offline as well!
+      </p>
+
+      <div class="row mb-5">
+        <label for="fileInput"><strong>Step 1. </strong> Select your DOCX file from your computer.</label>
+        <div class="d-grid gap-2 col-10 mx-auto mt-2">
+          <input id="fileInput" class="form-control" type="file" accept=".docx" />
+        </div>
+
+      </div>
+
+      <div class="row mb-5">
+        <label for="listAuthors"><strong>Step 2. </strong> Click to see a table with all the current authors in the
+          Microsoft Word file. You can rename the authors in the empty text fields. If the fields are left blank, no
+          changes to the author will be made. Authors with the same name and initials will be consolidated into one
+          person.</label>
+        <div class="d-grid gap-2 col-4 mx-auto mt-2">
+          <button id="listAuthors" type="button" class="btn btn-secondary" disabled>List Authors</button>
+        </div>
+      </div>
+
+      <table id="authorsTable" class="table d-none">
+        <thead>
+          <tr>
+            <th scope="col">Original Person</th>
+            <th scope="col">Original Initials</th>
+            <th scope="col">New Person</th>
+            <th scope="col">New Initials</th>
+          </tr>
+        </thead>
+        <tbody id="nameTable">
+        </tbody>
+      </table>
+
+      <div class="row" style="margin-bottom: 12rem;">
+        <label for="changeAuthors"><strong>Step 3. </strong> Download your new file with the correct authors!</label>
+        <div class="d-grid gap-2 col-4 mx-auto">
+          <button id="changeAuthors" type="button" class="btn btn-secondary mt-2" disabled>Download</button>
+        </div>
+
+      </div>
+
+
+
+
+    </div>
+
+  </main>
+
+
+  <footer class="page-footer font-small text-white bg-dark">
+    <div class="footer-copyright text-center py-3">
+
+      <div class="text-center">
+        <div class="d-flex align-items-center justify-content-center">
+          <div class="text-start d-inline-block align-center">
+            <script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js"
+              data-name="bmc-button" data-slug="ansonlai" data-color="#FFDD00" data-emoji="" data-font="Lato"
+              data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#000000"
+              data-coffee-color="#ffffff"></script>
+          </div>
+          <div class="text-start d-inline-block align-center ms-3">
+          </div>
+        </div>
+      </div>
+      <p class="small mt-2">Do you love this tool and want to see others like it?</p>
+    </div>
+
+  </footer>
+
+</body>
+
+
+
+<script>
+  async function listAuthors(zipContents) {
+    authorList = [];
+
+    for (const filename in zipContents.files) {
+      const content = await zipContents.file(filename).async('arraybuffer');
+      if (filename === 'word/people.xml') {
+        // Parse and modify people.xml
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(new TextDecoder().decode(content), 'application/xml');
+        // Find and remove all instances of <w15:person> elements
+        var peopleNodes = xmlDoc.getElementsByTagName('w15:person');
+        var table = document.getElementById("nameTable");
+        while (peopleNodes.length > 0) {
+          var personNode = peopleNodes[0];
+          // Create an empty <tr> element and add it to the 1st position of the table:
+          var row = table.insertRow();
+          var cell1 = row.insertCell(0);
+          var cell2 = row.insertCell(1);
+          var cell3 = row.insertCell(2);
+          var cell4 = row.insertCell(3);
+          cell1.innerHTML = personNode.getAttribute('w15:author');
+          cell3.innerHTML = '<input type="text" class="form-control"/>';
+          cell4.innerHTML = '<input type="text" class="form-control"/>';
+          personNode.parentNode.removeChild(personNode);
+        }
+      }
+    }
+    for (const filename in zipContents.files) {
+      const content = await zipContents.file(filename).async('arraybuffer');
+      if (filename === 'word/comments.xml') {
+        // Parse and modify people.xml
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(new TextDecoder().decode(content), 'application/xml');
+        // Find and remove all instances of <w15:person> elements
+        var peopleNodes = xmlDoc.getElementsByTagName('w:comment');
+        while (peopleNodes.length > 0) {
+          var personNode = peopleNodes[0];
+          // personNode.setAttribute('w:author', "Anson");
+          personNode.parentNode.removeChild(personNode);
+
+
+          var table = document.getElementById("nameTable");
+          var rows = table.getElementsByTagName("tr");
+
+          for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            var cells = row.getElementsByTagName("td");
+
+            // Check if the value of "name" matches the value of the first cell
+            if (cells.length > 0 && cells[0].textContent.trim() === personNode.getAttribute('w:author')) {
+              // Add the value of "name" to the second cell
+              if (cells.length > 1) {
+                cells[1].textContent = personNode.getAttribute('w:initials');
+              }
+            }
+          }
+        }
+      }
+    }
+  };
+</script>
+<script>
+  function createAuthorsDictionary() {
+    var dictionary = {};
+
+    var table = document.getElementById("nameTable");
+    var rows = table.getElementsByTagName("tr");
+
+    for (var i = 0; i < rows.length; i++) {
+      var cells = rows[i].getElementsByTagName("td");
+
+      if (cells.length >= 4) {
+        var originalPerson = cells[0].textContent.trim();
+        var originalInitials = cells[1].textContent.trim();
+        var newPerson = cells[2].querySelector("input").value.trim();
+        var newInitials = cells[3].querySelector("input").value.trim();
+
+        var author = newPerson ? newPerson : originalPerson;
+        var initials = newInitials ? newInitials : originalInitials;
+
+        dictionary[originalPerson] = {
+          "Author": author,
+          "Initials": initials
+        };
+      }
+    }
+
+    return dictionary;
+  }
+</script>
+<script>
+  const fileInput = document.getElementById('fileInput');
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const fileInput = document.getElementById('fileInput');
+    const listAuthorsButton = document.getElementById('listAuthors');
+    const changeAuthorsButton = document.getElementById('changeAuthors');
+    const authorsTable = document.getElementById('authorsTable');
+
+    fileInput.addEventListener('change', function () {
+      if (fileInput.files.length > 0) {
+        listAuthorsButton.disabled = false;
+      } else {
+        listAuthorsButton.disabled = true;
+      }
+    });
+
+
+    listAuthorsButton.addEventListener('click', async function () {
+      const files = fileInput.files;
+      if (files.length === 0) {
+        console.log('No file selected.');
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.onload = async function () {
+        const zip = new JSZip();
+        const arrayBuffer = reader.result;
+
+        // Load the ZIP content
+        const zipContents = await zip.loadAsync(arrayBuffer);
+
+        // Create a new ZIP instance
+        const newZip = new JSZip();
+
+        listAuthors(zipContents);
+      }
+      reader.readAsArrayBuffer(files[0]);
+
+
+      authorsTable.classList.remove('d-none');
+      changeAuthorsButton.disabled = false;
+    });
+
+    changeAuthorsButton.addEventListener('click', async function () {
+      const files = fileInput.files;
+      if (files.length === 0) {
+        console.log('No file selected.');
+        return;
+      }
+
+      const selectedFile = fileInput.files[0];
+      const selectedFileName = selectedFile.name;
+
+      const reader = new FileReader();
+
+      reader.onload = async function () {
+        const zip = new JSZip();
+        const arrayBuffer = reader.result;
+
+        // Load the ZIP content
+        const zipContents = await zip.loadAsync(arrayBuffer);
+
+        // Create a new ZIP instance
+        const newZip = new JSZip();
+
+        // Call the function and get the dictionary
+        var authorsDictionary = createAuthorsDictionary();
+
+        // Add the original files to the new ZIP
+        for (const filename in zipContents.files) {
+          const content = await zipContents.file(filename).async('arraybuffer');
+          if (filename === 'word/people.xml') {
+            var parsedAuthors = [];
+
+            // Parse and modify people.xml
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(new TextDecoder().decode(content), 'application/xml');
+            // Find and remove all instances of <w15:person> elements
+            var peopleNodes = xmlDoc.getElementsByTagName('w15:person');
+
+            for (var i = 0; i < peopleNodes.length; i++) {
+              var personNode = peopleNodes[i];
+              var authorValue = personNode.getAttribute('w15:author');
+
+              if (authorValue in authorsDictionary) {
+                var newAuthor = authorsDictionary[authorValue]["Author"];
+
+                if (newAuthor !== "") {
+                  if (parsedAuthors.includes(newAuthor)) {
+                    personNode.parentNode.removeChild(personNode);
+                    i--; // Decrement i to adjust for the removed node
+                  } else {
+                    personNode.setAttribute('w15:author', newAuthor);
+                    parsedAuthors.push(newAuthor); // Append to parsedAuthors
+
+                    var presenceInfoNodes = personNode.getElementsByTagNameNS('http://schemas.microsoft.com/office/word/2012/wordml', 'presenceInfo');
+                    if (presenceInfoNodes.length > 0) {
+                      var presenceInfoNode = presenceInfoNodes[0];
+                      presenceInfoNode.setAttribute('w15:userId', newAuthor);
+                    }
+                  }
+                }
+              }
+            }
+
+            // Serialize the modified XML back to a string
+            const serializer = new XMLSerializer();
+            const modifiedContent = serializer.serializeToString(xmlDoc);
+
+            newZip.file(filename, modifiedContent);
+          }
+
+          else if (filename === 'word/document.xml') {
+            // Parse and modify people.xml
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(new TextDecoder().decode(content), 'application/xml');
+            // Find and remove all instances of <w15:person> elements
+            var delNodes = xmlDoc.getElementsByTagName('w:del');
+            for (var i = 0; i < delNodes.length; i++) {
+              var delNode = delNodes[i];
+              delNode.setAttribute('w:author', authorsDictionary[delNode.getAttribute('w:author')]["Author"]);
+            }
+
+            var insNodes = xmlDoc.getElementsByTagName('w:ins');
+            for (var i = 0; i < insNodes.length; i++) {
+              var insNode = insNodes[i];
+              insNode.setAttribute('w:author', authorsDictionary[insNode.getAttribute('w:author')]["Author"]);
+            }
+
+            // Serialize the modified XML back to a string
+            const serializer = new XMLSerializer();
+            const modifiedContent = serializer.serializeToString(xmlDoc);
+
+            newZip.file(filename, modifiedContent);
+          }
+
+          else if (filename === 'word/comments.xml') {
+            // Parse and modify people.xml
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(new TextDecoder().decode(content), 'application/xml');
+            // Find and remove all instances of <w15:person> elements
+            var commentNodes = xmlDoc.getElementsByTagName('w:comment');
+            for (var i = 0; i < commentNodes.length; i++) {
+              var commentNode = commentNodes[i];
+              var author = commentNode.getAttribute('w:author');
+              commentNode.setAttribute('w:author', authorsDictionary[author]["Author"]);
+              commentNode.setAttribute('w:initials', authorsDictionary[author]["Initials"]);
+            }
+
+
+            // Serialize the modified XML back to a string
+            const serializer = new XMLSerializer();
+            const modifiedContent = serializer.serializeToString(xmlDoc);
+
+            newZip.file(filename, modifiedContent);
+          }
+          else {
+            newZip.file(filename, content);
+          }
+
+        }
+
+        // Generate the new ZIP archive
+        const newZipContent = await newZip.generateAsync({ type: 'blob' });
+
+        // Save the new ZIP archive (for demonstration purposes)
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(newZipContent);
+        a.download = selectedFileName.replace(/\.docx$/, "") + "-modified-authors.docx";
+        a.click();
+      };
+
+      reader.readAsArrayBuffer(files[0]);
+    });
+  });
+</script>
+
+</html>
